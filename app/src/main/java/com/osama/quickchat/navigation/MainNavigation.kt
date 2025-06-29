@@ -3,10 +3,13 @@ package com.osama.quickchat.navigation
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.osama.quickchat.R
+import com.osama.quickchat.data.LocalChatDataProvider
+import com.osama.quickchat.data.model.Conversation
 import com.osama.quickchat.data.model.MessageItem
 import com.osama.quickchat.ui.screens.Main.ChatMessage
 import com.osama.quickchat.ui.screens.Main.ChatScreen
@@ -49,30 +52,40 @@ fun MainNavigation(navController: NavHostController) {
         composable(Screen.Home.route) {
             HomeActivity(navController)
         }
+        @Composable
+        fun MessagesScreen(
+            onMessageClick: (Conversation) -> Unit
+        ) {
+            val conversations = remember { LocalChatDataProvider.getConversations() }
 
-        composable(Screen.Messages.route) {
-            MessagesScreen(
-                messages = messageList,
-                onMessageClick = { selectedMessage ->
-                    navController.navigate("chat/${selectedMessage.id}")
-                }
-            )
+            // تمرير conversations إلى LazyColumn مثلاً
         }
+//        composable(Screen.Messages.route) {
+//            MessagesScreen(
+//                messages = messageList,
+//                onMessageClick = { selectedMessage ->
+//                    navController.navigate("chat/${selectedMessage.id}")
+//                }
+//            )
+//        }
 
         composable(Screen.Profile.route) {
             ProfileScreen(navController)
         }
 
 
-        composable("chat") {
-            ChatScreen(
-                messages = listOf(
-                    ChatMessage(1, "مرحبًا", false),
-                    ChatMessage(2, "هل المنتج متوفر؟", true),
-                    ChatMessage(3, "نعم، متاح الآن", false)
-                ),
-                onBackClick = { navController.popBackStack() }
-            )
+
+        composable("chat/{id}") { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id")?.toIntOrNull()
+            val conversation = id?.let { LocalChatDataProvider.getConversationById(it) }
+//            val messages = id?.let { LocalChatDataProvider.getMessagesForConversation(it) } ?: emptyList()
+
+            if (conversation != null) {
+                ChatScreen(
+                    conversation = conversation,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
         }
         composable("welcome") {
             MainScaffold()

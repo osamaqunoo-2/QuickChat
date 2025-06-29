@@ -1,5 +1,6 @@
 package com.osama.quickchat.ui.screens.components
 
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,20 +17,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.osama.quickchat.R
+import com.osama.quickchat.data.model.Conversation
 import com.osama.quickchat.data.model.MessageItem
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 
 @Composable
 fun MessageListItem(
-    message: MessageItem,
+    message: Conversation,
     onClick: () -> Unit
 ) {
-    val backgroundColor = if (message.isRead) Color.White else Color(0xFFF5F5F5)
+    val context = LocalContext.current
+
+    val backgroundColor = if (message.hasUnread) Color.White else Color(0xFFF5F5F5)
 
     Surface(
         modifier = Modifier
@@ -46,8 +55,8 @@ fun MessageListItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                painter = painterResource(id = message.imageRes),
-                contentDescription = message.name,
+                painter = painterResource(id = message.userImage),
+                contentDescription = message.userName,
                 contentScale = ContentScale.Crop, // يجعل الصورة تمتلئ الدائرة
                 modifier = Modifier
                     .size(54.dp)
@@ -56,7 +65,7 @@ fun MessageListItem(
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = message.name,
+                    text = message.userName,
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
@@ -66,7 +75,8 @@ fun MessageListItem(
                 )
             }
             Text(
-                text = message.time,
+
+                text = getTimeAgo(context, message.lastMessageTime),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
@@ -74,35 +84,56 @@ fun MessageListItem(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun PreviewMessageListItems() {
-    Column {
-        // غير مقروءة
-        MessageListItem(
-            message = MessageItem(
-                id = 1,
-                name = "Osama Store",
-                lastMessage = "مرحبًا بك 👋",
-                time = "10:45 ص",
-                imageRes = R.drawable.sample_profile,
-                isRead = false
-            ),
-            onClick = {}
-        )
+fun getTimeAgo(context: Context, timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    val diff = now - timestamp
 
-        // مقروءة
-        MessageListItem(
-            message = MessageItem(
-                id = 2,
-                name = "Fresh Shop",
-                lastMessage = "تم إرسال الطلب",
-                time = "10:30 ص",
-                imageRes = R.drawable.sample_profile,
-                isRead = true
-            ),
-            onClick = {}
-        )
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
+    val hours = TimeUnit.MILLISECONDS.toHours(diff)
+    val days = TimeUnit.MILLISECONDS.toDays(diff)
+
+    return when {
+        diff < 60_000 -> context.getString(R.string.just_now)
+        minutes < 60 -> context.getString(R.string.minutes_ago, minutes)
+        hours < 24 -> context.getString(R.string.hours_ago, hours)
+        days == 1L -> context.getString(R.string.yesterday)
+        days < 7 -> context.getString(R.string.days_ago, days)
+        else -> {
+            val sdf = SimpleDateFormat(context.getString(R.string.date_format), Locale.getDefault())
+            sdf.format(Date(timestamp))
+        }
     }
 }
+
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewMessageListItems() {
+//    Column {
+//        // غير مقروءة
+//        MessageListItem(
+//            message = MessageItem(
+//                id = 1,
+//                name = "Osama Store",
+//                lastMessage = "مرحبًا بك 👋",
+//                time = "10:45 ص",
+//                imageRes = R.drawable.sample_profile,
+//                isRead = false
+//            ),
+//            onClick = {}
+//        )
+//
+//        // مقروءة
+//        MessageListItem(
+//            message = MessageItem(
+//                id = 2,
+//                name = "Fresh Shop",
+//                lastMessage = "تم إرسال الطلب",
+//                time = "10:30 ص",
+//                imageRes = R.drawable.sample_profile,
+//                isRead = true
+//            ),
+//            onClick = {}
+//        )
+//    }
+//}
 

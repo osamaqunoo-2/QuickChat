@@ -28,13 +28,15 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.ui.res.stringResource
 import com.osama.quickchat.ui.screens.components.MessageListItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TopAppBarDefaults
+import com.osama.quickchat.data.model.Conversation
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MessagesScreen(
-    messages: List<MessageItem>,
-    onMessageClick: (MessageItem) -> Unit
+    messages: List<Conversation>,
+    onMessageClick: (Conversation) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
 
@@ -49,7 +51,12 @@ fun MessagesScreen(
                         .padding(horizontal = 12.dp)
                         .size(32.dp)
                 )
-            }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.White,
+                navigationIconContentColor = Color.Black,
+                titleContentColor = Color.Black
+            )
         )
 
         Box(modifier = Modifier.fillMaxSize()) {

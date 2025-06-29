@@ -14,10 +14,12 @@ import com.osama.quickchat.ui.screens.Main.ProfileScreen
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.osama.quickchat.R
+import com.osama.quickchat.data.LocalChatDataProvider
 import com.osama.quickchat.data.model.MessageItem
 import com.osama.quickchat.ui.screens.Main.ChatMessage
 import com.osama.quickchat.ui.screens.Main.HomeActivity
@@ -59,15 +61,25 @@ fun AppInnerNavigation(
 //                onMessageClick = { navController.navigate("chat") }
 //            )
 //        }
+//        composable("messages") {
+//            val fakeMessages = listOf(
+//                MessageItem(1, "Osama Store", "مرحبًا", "10:00 ص", R.drawable.sample_profile, isRead = false),
+//                MessageItem(2, "Fresh Shop", "هل ما زال المنتج متوفر؟", "9:45 ص", R.drawable.sample_profile, isRead = true),
+//                MessageItem(3, "Green Market", "تم التوصيل؟", "9:30 ص", R.drawable.sample_profile, isRead = true)
+//            )
+//            MessagesScreen(
+//                messages = fakeMessages,
+//                onMessageClick = { navController.navigate("chat") }
+//            )
+//        }
         composable("messages") {
-            val fakeMessages = listOf(
-                MessageItem(1, "Osama Store", "مرحبًا", "10:00 ص", R.drawable.sample_profile, isRead = false),
-                MessageItem(2, "Fresh Shop", "هل ما زال المنتج متوفر؟", "9:45 ص", R.drawable.sample_profile, isRead = true),
-                MessageItem(3, "Green Market", "تم التوصيل؟", "9:30 ص", R.drawable.sample_profile, isRead = true)
-            )
+            val messages = remember { LocalChatDataProvider.getConversations() }
+
             MessagesScreen(
-                messages = fakeMessages,
-                onMessageClick = { navController.navigate("chat") }
+                messages = messages,
+                onMessageClick = { conversation ->
+                    navController.navigate("chat/${conversation.id}")
+                }
             )
         }
         composable("profile") {
@@ -75,16 +87,30 @@ fun AppInnerNavigation(
         }
 
 
-        composable("chat") {
-            // إلغاء الـ MainScaffold في هذه الشاشة
-            ChatScreen(
-                messages = listOf(
-                    ChatMessage(1, "مرحبًا", false),
-                    ChatMessage(2, "هل المنتج متوفر؟", true),
-                    ChatMessage(3, "نعم، متاح الآن", false)
-                ),
-                onBackClick = { navController.popBackStack() }
-            )
+//        composable("chat") {
+//            // إلغاء الـ MainScaffold في هذه الشاشة
+//            ChatScreen(
+//                messages = listOf(
+//                    ChatMessage(1, "مرحبًا", false),
+//                    ChatMessage(2, "هل المنتج متوفر؟", true),
+//                    ChatMessage(3, "نعم، متاح الآن", false)
+//                ),
+//                onBackClick = { navController.popBackStack() }
+//            )
+//        }
+
+        // 👇 هذا اللي لازم تضيفه تحت الـ "messages" composable
+        composable("chat/{id}") { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id")?.toIntOrNull()
+            val conversation = id?.let { LocalChatDataProvider.getConversationById(it) }
+//            val messages = id?.let { LocalChatDataProvider.getMessagesForConversation(it) } ?: emptyList()
+
+            if (conversation != null) {
+                ChatScreen(
+                    conversation = conversation,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
         }
     }
 }

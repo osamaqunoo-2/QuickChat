@@ -21,7 +21,8 @@ import androidx.compose.ui.graphics.Color
 
 data class BottomNavItem(val screen: AppRoute, val iconRes: Int, val label: String)
 @Composable
-fun BottomBar(navController: NavController) {
+fun BottomBar(navController: NavController,    unreadCount: Int
+) {
     val items = listOf(
         BottomNavItem(AppRoute.Home, R.drawable.ic_home, "Home"),
         BottomNavItem(AppRoute.Messages, R.drawable.ic_chat, "Messages"),
@@ -38,15 +39,44 @@ fun BottomBar(navController: NavController) {
         items.forEach { item ->
             NavigationBarItem(
                 selected = currentRoute == item.screen.route,
+
+
                 onClick = {
                     navController.navigate(item.screen.route)
                 },
+
                 icon = {
-                    Icon(
-                        painter = painterResource(id = item.iconRes),
-                        contentDescription = item.label,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    if (item.screen == AppRoute.Messages){
+                        if (unreadCount > 0) {
+                            BadgedBox(
+                                badge = {
+                                    Badge {
+                                        Text(unreadCount.toString())
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = item.iconRes),
+                                    contentDescription = item.label,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        } else {
+                            Icon(
+                                painter = painterResource(id = item.iconRes),
+                                contentDescription = item.label,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }else{
+                        Icon(
+                            painter = painterResource(id = item.iconRes),
+                            contentDescription = item.label,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+
                 },
                 label = { Text(item.label) }
             )

@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import com.osama.quickchat.data.LocalChatDataProvider
 import com.osama.quickchat.navigation.Screen
 import com.osama.quickchat.ui.screens.components.ProductCard
 
@@ -42,10 +43,17 @@ val sampleProducts = listOf(
 )
 
 @Composable
-fun ProductGrid(onMessageClick: () -> Unit) {
+fun ProductGrid(navController: NavHostController) {
     LazyVerticalGrid(columns = GridCells.Fixed(2), contentPadding = PaddingValues(8.dp)) {
         items(sampleProducts) { product ->
-            ProductCard(product, onMessageClick)
+            ProductCard(product,   onMessageClick = {
+                val conversation = LocalChatDataProvider.createConversationWithWelcomeMessage(
+                    userName = product.merchant,
+                    imageRes = R.drawable.sample_profile,
+                    welcomeText ="Hello! How can I assist you today? I'm here to help with anything you need."
+                )
+                navController.navigate("chat/${conversation.id}")
+            })
         }
     }
 }
@@ -91,10 +99,10 @@ fun HomeActivity(navController: NavHostController) {
         Column(modifier = Modifier.fillMaxSize()) {
             TopBar()
             Spacer(modifier = Modifier.height(8.dp))
-            ProductGrid(
-                onMessageClick = {
-                    navController.navigate("chat")
-                }
+            ProductGrid(navController
+//                onMessageClick = {
+//                    navController.navigate("chat")
+//                }
             )
         }
     }

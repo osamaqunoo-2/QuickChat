@@ -29,4 +29,11 @@
     <string name="send">Send</string>
     <string name="back">Back</string>
     <string name="profile_image_desc">User profile image</string>
+
+    <string name="just_now">Just now</string>
+    <string name="minutes_ago">%1$d minutes ago</string>
+    <string name="hours_ago">%1$d hours ago</string>
+    <string name="yesterday">Yesterday</string>
+    <string name="days_ago">%1$d days ago</string>
+    <string name="date_format">dd MMM, hh:mm a</string>
 </resources>

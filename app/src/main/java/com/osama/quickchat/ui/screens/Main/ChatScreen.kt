@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -15,6 +16,8 @@ import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyListState
 
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.draw.clip
@@ -24,6 +27,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.osama.quickchat.R
+import com.osama.quickchat.data.LocalChatDataProvider
+import com.osama.quickchat.data.model.Conversation
+import kotlinx.coroutines.delay
 
 // ✅ نموذج بيانات الرسالة
 data class ChatMessage(
@@ -35,13 +41,39 @@ data class ChatMessage(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
-    userName: String = "Osama Store",
-    userImageRes: Int = R.drawable.sample_profile,
-    messages: List<ChatMessage> = emptyList(),
+    conversation: Conversation,
     onBackClick: () -> Unit = {}
 ) {
-    var messageText by remember { mutableStateOf("") }
 
+    val listState = rememberLazyListState()
+    var isTyping by remember { mutableStateOf(false) }
+    var pendingReply by remember { mutableStateOf(false) }
+    var messageText by remember { mutableStateOf("") }
+    val messages = remember { mutableStateListOf<com.osama.quickchat.data.model.ChatMessage>() }
+
+    // ✅ عند أول دخول: تحميل الرسائل من الـ DataProvider
+    LaunchedEffect(conversation.id) {
+        val initialMessages = LocalChatDataProvider.getMessagesForConversation(conversation.id)
+        messages.clear()
+        messages.addAll(initialMessages)
+    }
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
+        }
+        if (pendingReply) {
+            delay(1500)
+            val autoReply = LocalChatDataProvider.addMessage(
+                conversationId = conversation.id,
+                text = "this massage replay for your massage :)",
+                isSentByUser = false
+            )
+            messages.add(autoReply)
+            isTyping = false
+            pendingReply = false
+        }
+
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -52,14 +84,14 @@ fun ChatScreen(
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Image(
-                        painter = painterResource(id = userImageRes),
+                        painter = painterResource(id = conversation.userImage),
                         contentDescription = stringResource(id = R.string.profile_image_desc),
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = userName)
+                    Text(text = conversation.userName)
                 }
             },
             navigationIcon = {
@@ -76,7 +108,7 @@ fun ChatScreen(
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
-                .padding(8.dp)
+                .padding(8.dp), state = listState
         ) {
             items(messages) { msg ->
                 Row(
@@ -100,6 +132,29 @@ fun ChatScreen(
                     )
                 }
             }
+
+
+            if (isTyping) {
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Text(
+                            text = "...",
+                            modifier = Modifier
+                                .background(
+                                    Color.LightGray.copy(alpha = 0.3f),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            color = Color.DarkGray
+                        )
+                    }
+                }
+            }
         }
 
         // ✅ إدخال الرسالة
@@ -117,27 +172,41 @@ fun ChatScreen(
                     .padding(end = 8.dp),
                 placeholder = { Text(stringResource(id = R.string.write_message)) },
                 shape = RoundedCornerShape(20.dp),
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White,
+                    disabledContainerColor = Color.White,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                    cursorColor = MaterialTheme.colorScheme.primary,
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
+                    disabledTextColor = Color.Gray,
+                    focusedPlaceholderColor = Color.Gray,
+                    unfocusedPlaceholderColor = Color.Gray
+                ),
                 trailingIcon = {
                     if (messageText.isNotEmpty()) {
                         IconButton(onClick = { messageText = "" }) {
                             Icon(
-                                painter = painterResource(id = R.drawable.baseline_clear_24), // أيقونة الحذف (يجب إضافتها في drawable)
+                                painter = painterResource(id = R.drawable.baseline_clear_24),
                                 contentDescription = "Clear text",
                                 tint = Color.Gray
                             )
                         }
                     }
                 },
-                singleLine = true,
-
-//                keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions.Default.copy(
-//                    imeAction = androidx.compose.ui.text.input.ImeAction.Send
-//                ),
                 keyboardActions = KeyboardActions(
                     onSend = {
-                        // تنفيذ الإرسال من الكيبورد
                         if (messageText.isNotBlank()) {
-                            println("Send message: $messageText")
+                            val msg = LocalChatDataProvider.addMessage(
+                                conversationId = conversation.id,
+                                text = messageText,
+                                isSentByUser = true
+                            )
+                            messages.add(msg)
                             messageText = ""
                         }
                     }
@@ -147,8 +216,17 @@ fun ChatScreen(
             IconButton(
                 onClick = {
                     if (messageText.isNotBlank()) {
-                        println("Send message: $messageText")
+                        val msg = LocalChatDataProvider.addMessage(
+                            conversationId = conversation.id,
+                            text = messageText,
+                            isSentByUser = true
+                        )
+                        messages.add(msg)
                         messageText = ""
+
+                        isTyping = true
+                        pendingReply = true
+
                     }
                 }
             ) {
@@ -162,14 +240,14 @@ fun ChatScreen(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun ChatScreenPreview() {
-    ChatScreen(
-        messages = listOf(
-            ChatMessage(1, "مرحبًا", false),
-            ChatMessage(2, "هل المنتج متوفر؟", true),
-            ChatMessage(3, "نعم، متاح الآن", false)
-        )
-    )
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun ChatScreenPreview() {
+//    ChatScreen(
+//        messages = listOf(
+//            ChatMessage(1, "مرحبًا", false),
+//            ChatMessage(2, "هل المنتج متوفر؟", true),
+//            ChatMessage(3, "نعم، متاح الآن", false)
+//        )
+//    )
+//}
